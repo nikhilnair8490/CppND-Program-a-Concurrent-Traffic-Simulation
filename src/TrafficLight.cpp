@@ -5,13 +5,21 @@
 
 /* Implementation of class "MessageQueue" */
 
-/*
+
 template <typename T>
 T MessageQueue<T>::receive()
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait()
     // to wait for and receive new messages and pull them from the queue using move semantics.
     // The received object should then be returned by the receive function.
+    std::unique_lock<std::mutex> lock(_mutex);
+    // Wait until there is a message in the queue
+    _condition.wait(lock, [this] { return !_queue.empty(); });
+
+    // Move the message from the front of the queue and return it
+    T msg = std::move(_queue.front());
+    _queue.pop_front();
+    return msg;
 }
 
 template <typename T>
@@ -19,8 +27,11 @@ void MessageQueue<T>::send(T &&msg)
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex>
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
+    std::lock_guard<std::mutex> lock(_mutex);
+    _queue.emplace_back(std::move(msg));
+    _condition.notify_one();
 }
-*/
+
 
 /* Implementation of class "TrafficLight" */
 
@@ -34,9 +45,25 @@ void TrafficLight::waitForGreen()
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop
     // runs and repeatedly calls the receive function on the message queue.
     // Once it receives TrafficLightPhase::green, the method returns.
+    while (true)
+    {
+        // Wait for a message from the queue
+        TrafficLightPhase phase = _msgQueue.receive();
+
+        // Check if the phase is green
+        if (phase == TrafficLightPhase::green)
+        {
+            std::cout << "Traffic light is green, proceeding..." << std::endl;
+            return; // Exit the loop when the light is green
+        }
+        else
+        {
+            std::cout << "Traffic light is red, waiting..." << std::endl;
+        }
+    }   
 }
 
-TrafficLightPhase TrafficLight::getCurrentPhase()
+TrafficLightPhase TrafficLight::getCurrentPhase() const
 {
     return _currentPhase;
 }

@@ -19,8 +19,13 @@ template <class T>
 class MessageQueue
 {
 public:
+    void send(T &&msg);
+    T receive();
 
 private:
+    std::deque<T> _queue; // queue to hold messages
+    std::condition_variable _condition; // condition variable for synchronization
+    std::mutex _mutex; // mutex for protecting access to the queue
     
 };
 
@@ -42,7 +47,7 @@ public:
     TrafficLight();
 
     // getters / setters
-    TrafficLightPhase getCurrentPhase();
+    TrafficLightPhase getCurrentPhase() const;
 
     // typical behaviour methods
     void waitForGreen();
